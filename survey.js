@@ -16,13 +16,15 @@
   let submitting = false;
 
   allFields.forEach(field => {
-    state[field.id] = field.defaultValue ?? (
-      field.type === "rating"
-        ? 0
-        : field.type === "checkbox"
-          ? []
-          : ""
-    );
+    state[field.id] =
+      field.defaultValue ??
+      (
+        field.type === "rating"
+          ? 0
+          : field.type === "checkbox"
+            ? []
+            : ""
+      );
   });
 
   function esc(value) {
@@ -55,13 +57,18 @@
           const match = (field.options || [])
             .find(opt => optionValue(opt) === String(value));
 
-          return match ? optionLabel(match) : String(value);
+          return match
+            ? optionLabel(match)
+            : String(value);
         })
         .filter(Boolean)
         .join(", ");
     }
 
-    if (field.type === "radio" || field.type === "select") {
+    if (
+      field.type === "radio" ||
+      field.type === "select"
+    ) {
       const match = (field.options || [])
         .find(opt => optionValue(opt) === String(rawValue));
 
@@ -81,26 +88,38 @@
         </span>
       </div>
 
-      <div class="progress-wrapper" id="progressWrapper" hidden>
+      <div
+        class="progress-wrapper"
+        id="progressWrapper"
+        hidden
+      >
         <div class="progress-meta">
           <span id="progressText">Tanong</span>
           <span id="progressPercent">0%</span>
         </div>
 
         <div class="progress-track">
-          <div class="progress-fill" id="progressFill"></div>
+          <div
+            class="progress-fill"
+            id="progressFill"
+          ></div>
         </div>
       </div>
 
       <main class="survey-main">
         <div class="survey-card">
 
-          <section class="screen active" id="screen-welcome">
+          <section
+            class="screen active"
+            id="screen-welcome"
+          >
             <span class="eyebrow">
               ${esc(config.welcomeEyebrow || "Sarbey")}
             </span>
 
-            <h1>${esc(config.title || "Sarbey")}</h1>
+            <h1>
+              ${esc(config.title || "Sarbey")}
+            </h1>
 
             <p class="subtitle">
               ${esc(config.description || "")}
@@ -117,14 +136,24 @@
               id="startBtn"
               type="button"
             >
-              ${esc(config.startLabel || "Simulan ang Sarbey")}
+              ${esc(
+                config.startLabel ||
+                "Simulan ang Sarbey"
+              )}
             </button>
           </section>
 
-          <section class="screen" id="screen-info">
-            <span class="eyebrow">Impormasyon</span>
+          <section
+            class="screen"
+            id="screen-info"
+          >
+            <span class="eyebrow">
+              Impormasyon
+            </span>
 
-            <h2>Impormasyon ng Kalahok</h2>
+            <h2>
+              Impormasyon ng Kalahok
+            </h2>
 
             <p class="subtitle">
               Ilagay ang kinakailangang impormasyon bago magpatuloy.
@@ -139,6 +168,7 @@
             ></div>
 
             <div class="nav-actions">
+
               <button
                 class="btn btn-secondary"
                 id="backInfo"
@@ -154,15 +184,23 @@
               >
                 Magpatuloy
               </button>
+
             </div>
           </section>
 
           <div id="questionScreens"></div>
 
-          <section class="screen" id="screen-feedback">
-            <span class="eyebrow">Huling Hakbang</span>
+          <section
+            class="screen"
+            id="screen-feedback"
+          >
+            <span class="eyebrow">
+              Huling Hakbang
+            </span>
 
-            <h2>Feedback sa Sarbey</h2>
+            <h2>
+              Feedback sa Sarbey
+            </h2>
 
             <p class="subtitle">
               Opsyonal ang bahaging ito.
@@ -177,6 +215,7 @@
             ></div>
 
             <div class="nav-actions">
+
               <button
                 class="btn btn-secondary"
                 id="backFeedback"
@@ -192,13 +231,21 @@
               >
                 Isumite ang Sarbey
               </button>
+
             </div>
           </section>
 
-          <section class="screen" id="screen-complete">
-            <span class="eyebrow">Tapos na</span>
+          <section
+            class="screen"
+            id="screen-complete"
+          >
+            <span class="eyebrow">
+              Tapos na
+            </span>
 
-            <h2>Salamat sa iyong pagsagot.</h2>
+            <h2>
+              Salamat sa iyong pagsagot.
+            </h2>
 
             <p class="subtitle">
               ${esc(
@@ -233,14 +280,19 @@
 
     let control = "";
 
-    if (field.type === "text" || field.type === "email") {
+    if (
+      field.type === "text" ||
+      field.type === "email"
+    ) {
       control = `
         <input
           id="field-${esc(field.id)}"
           type="${field.type}"
-          ${field.placeholder
-            ? `placeholder="${esc(field.placeholder)}"`
-            : ""}
+          ${
+            field.placeholder
+              ? `placeholder="${esc(field.placeholder)}"`
+              : ""
+          }
           autocomplete="off"
         >
       `;
@@ -250,7 +302,9 @@
       control = `
         <textarea
           id="field-${esc(field.id)}"
-          placeholder="${esc(field.placeholder || "")}"
+          placeholder="${esc(
+            field.placeholder || ""
+          )}"
         ></textarea>
       `;
     }
@@ -287,7 +341,9 @@
 
     else if (field.type === "select") {
       control = `
-        <select id="field-${esc(field.id)}"></select>
+        <select
+          id="field-${esc(field.id)}"
+        ></select>
       `;
     }
 
@@ -319,18 +375,28 @@
         <label
           class="form-label"
           for="${
-            field.type === "radio" || field.type === "checkbox"
+            field.type === "radio" ||
+            field.type === "checkbox"
               ? `choices-${field.id}`
               : `field-${field.id}`
           }"
         >
-          <span>${esc(field.label)}</span>
+
+          <span>
+            ${esc(field.label)}
+          </span>
+
           ${required}
+
         </label>
 
         ${
           field.helper
-            ? `<div class="helper">${esc(field.helper)}</div>`
+            ? `
+              <div class="helper">
+                ${esc(field.helper)}
+              </div>
+            `
             : ""
         }
 
@@ -353,86 +419,114 @@
   }
 
   function renderQuestions() {
-    const host = $("questionScreens");
+    const host =
+      $("questionScreens");
 
-    host.innerHTML = questions.map((q, i) => `
-      <section
-        class="screen"
-        id="screen-q-${i}"
-      >
+    host.innerHTML =
+      questions.map((q, i) => `
 
-        <span class="eyebrow">
-          Tanong ${i + 1} sa ${questions.length}
-        </span>
+        <section
+          class="screen"
+          id="screen-q-${i}"
+        >
 
-        <h2>${esc(q.label)}</h2>
+          <span class="eyebrow">
+            Tanong ${i + 1} sa ${questions.length}
+          </span>
 
-        ${
-          q.helper
-            ? `<p class="subtitle">${esc(q.helper)}</p>`
-            : ""
-        }
+          <h2>
+            ${esc(q.label)}
+          </h2>
 
-        ${fieldMarkup(q)}
+          ${
+            q.helper
+              ? `
+                <p class="subtitle">
+                  ${esc(q.helper)}
+                </p>
+              `
+              : ""
+          }
 
-        <div
-          class="validation-msg"
-          id="error-q-${i}"
-          role="alert"
-        ></div>
+          ${fieldMarkup(q)}
 
-        <div class="nav-actions">
+          <div
+            class="validation-msg"
+            id="error-q-${i}"
+            role="alert"
+          ></div>
 
-          <button
-            class="btn btn-secondary"
-            type="button"
-            data-back-q="${i}"
-          >
-            Bumalik
-          </button>
+          <div class="nav-actions">
 
-          <button
-            class="btn btn-primary"
-            type="button"
-            data-next-q="${i}"
-          >
-            ${i === questions.length - 1
-              ? "Magpatuloy"
-              : "Susunod"}
-          </button>
+            <button
+              class="btn btn-secondary"
+              type="button"
+              data-back-q="${i}"
+            >
+              Bumalik
+            </button>
 
-        </div>
+            <button
+              class="btn btn-primary"
+              type="button"
+              data-next-q="${i}"
+            >
+              ${
+                i === questions.length - 1
+                  ? "Magpatuloy"
+                  : "Susunod"
+              }
+            </button>
 
-      </section>
-    `).join("");
+          </div>
 
-    questions.forEach(renderFieldControl);
+        </section>
+
+      `).join("");
+
+    questions.forEach(
+      renderFieldControl
+    );
   }
 
   function renderFeedback() {
     $("feedbackFields").innerHTML =
-      feedbackFields.map(fieldMarkup).join("");
+      feedbackFields
+        .map(fieldMarkup)
+        .join("");
 
-    feedbackFields.forEach(renderFieldControl);
+    feedbackFields.forEach(
+      renderFieldControl
+    );
   }
 
   function renderFieldControl(field) {
+
     if (
       field.type === "text" ||
       field.type === "email" ||
       field.type === "textarea"
     ) {
-      const el = $(`field-${field.id}`);
+      const el =
+        $(`field-${field.id}`);
 
       if (!el) return;
 
-      el.addEventListener("input", () => {
-        state[field.id] = el.value;
-        clearFieldError(field.id);
-      });
+      el.addEventListener(
+        "input",
+        () => {
+          state[field.id] =
+            el.value;
+
+          clearFieldError(
+            field.id
+          );
+        }
+      );
 
       if (state[field.id]) {
-        el.value = state[field.id];
+        el.value =
+          state[field.id];
       }
 
       return;
@@ -443,7 +537,8 @@
     }
 
     if (field.type === "select") {
-      const el = $(`field-${field.id}`);
+      const el =
+        $(`field-${field.id}`);
 
       if (!el) return;
 
@@ -451,17 +546,31 @@
         `<option value="">Pumili ng sagot</option>` +
         (field.options || [])
           .map(opt => `
-            <option value="${esc(optionValue(opt))}">
-              ${esc(optionLabel(opt))}
+            <option
+              value="${esc(
+                optionValue(opt)
+              )}"
+            >
+              ${esc(
+                optionLabel(opt)
+              )}
             </option>
           `)
           .join("");
 
-      el.addEventListener("change", () => {
-        state[field.id] = el.value;
-        clearFieldError(field.id);
-        applyConditions();
-      });
+      el.addEventListener(
+        "change",
+        () => {
+          state[field.id] =
+            el.value;
+
+          clearFieldError(
+            field.id
+          );
+
+          applyConditions();
+        }
+      );
 
       return;
     }
@@ -470,167 +579,240 @@
       field.type === "radio" ||
       field.type === "checkbox"
     ) {
-      const host = $(`choices-${field.id}`);
+      const host =
+        $(`choices-${field.id}`);
 
       if (!host) return;
 
-      host.innerHTML = (field.options || [])
-        .map(opt => {
-          const value = optionValue(opt);
-          const label = optionLabel(opt);
+      host.innerHTML =
+        (field.options || [])
+          .map(opt => {
 
-          return `
-            <button
-              type="button"
-              class="option-card"
-              data-choice="${esc(value)}"
-            >
-              <span
-                class="${
-                  field.type === "checkbox"
-                    ? "checkbox-indicator"
-                    : "option-indicator"
-                }"
-              ></span>
+            const value =
+              optionValue(opt);
 
-              <span>${esc(label)}</span>
-            </button>
-          `;
-        })
-        .join("");
+            const label =
+              optionLabel(opt);
 
-      host.querySelectorAll(".option-card")
+            return `
+              <button
+                type="button"
+                class="option-card"
+                data-choice="${esc(value)}"
+              >
+
+                <span
+                  class="${
+                    field.type === "checkbox"
+                      ? "checkbox-indicator"
+                      : "option-indicator"
+                  }"
+                ></span>
+
+                <span>
+                  ${esc(label)}
+                </span>
+
+              </button>
+            `;
+          })
+          .join("");
+
+      host
+        .querySelectorAll(
+          ".option-card"
+        )
         .forEach(btn => {
 
-          btn.addEventListener("click", () => {
-            const value = btn.dataset.choice;
+          btn.addEventListener(
+            "click",
+            () => {
 
-            if (field.type === "radio") {
-              state[field.id] = value;
+              const value =
+                btn.dataset.choice;
 
-              host.querySelectorAll(".option-card")
-                .forEach(x => {
-                  const selected = x === btn;
+              if (
+                field.type === "radio"
+              ) {
+                state[field.id] =
+                  value;
 
-                  x.classList.toggle(
-                    "selected",
-                    selected
-                  );
+                host
+                  .querySelectorAll(
+                    ".option-card"
+                  )
+                  .forEach(x => {
 
-                  x.setAttribute(
-                    "aria-checked",
-                    String(selected)
-                  );
-                });
-            }
+                    const selected =
+                      x === btn;
 
-            else {
-              if (!Array.isArray(state[field.id])) {
-                state[field.id] = [];
-              }
+                    x.classList.toggle(
+                      "selected",
+                      selected
+                    );
 
-              const index =
-                state[field.id].indexOf(value);
-
-              if (index >= 0) {
-                state[field.id].splice(index, 1);
-                btn.classList.remove("selected");
+                    x.setAttribute(
+                      "aria-checked",
+                      String(
+                        selected
+                      )
+                    );
+                  });
               }
 
               else {
-                state[field.id].push(value);
-                btn.classList.add("selected");
+                if (
+                  !Array.isArray(
+                    state[field.id]
+                  )
+                ) {
+                  state[field.id] =
+                    [];
+                }
+
+                const index =
+                  state[field.id]
+                    .indexOf(value);
+
+                if (index >= 0) {
+                  state[field.id]
+                    .splice(index, 1);
+
+                  btn.classList.remove(
+                    "selected"
+                  );
+                }
+
+                else {
+                  state[field.id]
+                    .push(value);
+
+                  btn.classList.add(
+                    "selected"
+                  );
+                }
+
+                btn.setAttribute(
+                  "aria-checked",
+                  String(
+                    btn.classList.contains(
+                      "selected"
+                    )
+                  )
+                );
               }
 
-              btn.setAttribute(
-                "aria-checked",
-                String(
-                  btn.classList.contains("selected")
-                )
+              clearFieldError(
+                field.id
               );
+
+              applyConditions();
             }
-
-            clearFieldError(field.id);
-            applyConditions();
-          });
-
+          );
         });
 
       return;
     }
 
     if (field.type === "rating") {
-      const host = $(`rating-${field.id}`);
+      const host =
+        $(`rating-${field.id}`);
 
       if (!host) return;
 
-      const max = Number(field.max || 5);
+      const max =
+        Number(field.max || 5);
 
-      host.innerHTML = Array.from(
-        { length: max },
-        (_, i) => `
-          <button
-            type="button"
-            data-rating="${i + 1}"
-            aria-label="${i + 1} sa ${max}"
-          >
-            ${i + 1}
-          </button>
-        `
-      ).join("");
+      host.innerHTML =
+        Array.from(
+          { length: max },
+          (_, i) => `
+            <button
+              type="button"
+              data-rating="${i + 1}"
+              aria-label="${i + 1} sa ${max}"
+            >
+              ${i + 1}
+            </button>
+          `
+        )
+        .join("");
 
-      host.querySelectorAll("button")
+      host
+        .querySelectorAll(
+          "button"
+        )
         .forEach(btn => {
 
-          btn.addEventListener("click", () => {
-            state[field.id] =
-              Number(btn.dataset.rating);
+          btn.addEventListener(
+            "click",
+            () => {
 
-            host.querySelectorAll("button")
-              .forEach(x =>
-                x.classList.toggle(
-                  "selected",
-                  Number(x.dataset.rating) <=
-                    state[field.id]
+              state[field.id] =
+                Number(
+                  btn.dataset.rating
+                );
+
+              host
+                .querySelectorAll(
+                  "button"
                 )
+                .forEach(x =>
+                  x.classList.toggle(
+                    "selected",
+                    Number(
+                      x.dataset.rating
+                    ) <=
+                      state[field.id]
+                  )
+                );
+
+              $(`readout-${field.id}`)
+                .textContent =
+                  `${state[field.id]} / ${max}`;
+
+              clearFieldError(
+                field.id
               );
-
-            $(`readout-${field.id}`)
-              .textContent =
-                `${state[field.id]} / ${max}`;
-
-            clearFieldError(field.id);
-          });
-
+            }
+          );
         });
     }
   }
 
   function setAutomaticDate() {
     fields
-      .filter(f => f.type === "date")
+      .filter(
+        f => f.type === "date"
+      )
       .forEach(f => {
 
-        const el = $(`field-${f.id}`);
+        const el =
+          $(`field-${f.id}`);
 
         if (!el) return;
 
         const date =
-          new Date().toLocaleDateString(
-            "fil-PH",
-            {
-              year: "numeric",
-              month: "long",
-              day: "numeric"
-            }
-          );
+          new Date()
+            .toLocaleDateString(
+              "fil-PH",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+              }
+            );
 
-        state[f.id] = date;
-        el.value = date;
+        state[f.id] =
+          date;
+
+        el.value =
+          date;
       });
   }
 
   function bindNavigation() {
+
     $("startBtn").onclick =
       () => showScreen(1);
 
@@ -639,7 +821,10 @@
 
     $("nextInfo").onclick =
       () => {
-        if (validateFields(fields)) {
+
+        if (
+          validateFields(fields)
+        ) {
           showScreen(2);
         }
       };
@@ -647,16 +832,22 @@
     questions.forEach((q, i) => {
 
       $(`screen-q-${i}`)
-        .querySelector(`[data-back-q="${i}"]`)
+        .querySelector(
+          `[data-back-q="${i}"]`
+        )
         .onclick =
         () => showScreen(i + 1);
 
       $(`screen-q-${i}`)
-        .querySelector(`[data-next-q="${i}"]`)
+        .querySelector(
+          `[data-next-q="${i}"]`
+        )
         .onclick =
         () => {
 
-          if (!validateFields([q])) {
+          if (
+            !validateFields([q])
+          ) {
             return;
           }
 
@@ -665,20 +856,32 @@
     });
 
     $("backFeedback").onclick =
-      () => showScreen(questions.length + 1);
+      () =>
+        showScreen(
+          questions.length + 1
+        );
 
-    $("submitBtn").onclick = submit;
+    $("submitBtn").onclick =
+      submit;
 
-    $("restartBtn").onclick = reset;
+    $("restartBtn").onclick =
+      reset;
   }
 
   function isEmpty(field, value) {
-    if (field.type === "checkbox") {
-      return !Array.isArray(value) ||
-        value.length === 0;
+
+    if (
+      field.type === "checkbox"
+    ) {
+      return (
+        !Array.isArray(value) ||
+        value.length === 0
+      );
     }
 
-    if (field.type === "rating") {
+    if (
+      field.type === "rating"
+    ) {
       return Number(value) === 0;
     }
 
@@ -696,16 +899,22 @@
 
       if (
         field.showIf &&
-        !conditionMet(field.showIf)
+        !conditionMet(
+          field.showIf
+        )
       ) {
         return;
       }
 
-      const value = state[field.id];
+      const value =
+        state[field.id];
 
       if (
         field.required &&
-        isEmpty(field, value)
+        isEmpty(
+          field,
+          value
+        )
       ) {
         showFieldError(
           field.id,
@@ -716,7 +925,9 @@
       }
 
       else {
-        clearFieldError(field.id);
+        clearFieldError(
+          field.id
+        );
       }
     });
 
@@ -724,40 +935,61 @@
   }
 
   function conditionMet(condition) {
-    return Object.entries(condition || {})
-      .every(([id, expected]) => {
+    return Object.entries(
+      condition || {}
+    ).every(
+      ([id, expected]) => {
 
-        const current = state[id];
+        const current =
+          state[id];
 
-        if (Array.isArray(current)) {
-          return Array.isArray(expected)
-            ? expected.every(v =>
-                current.includes(v)
+        if (
+          Array.isArray(current)
+        ) {
+          return Array.isArray(
+            expected
+          )
+            ? expected.every(
+                v =>
+                  current.includes(v)
               )
-            : current.includes(expected);
+            : current.includes(
+                expected
+              );
         }
 
-        return current === expected;
-      });
+        return (
+          current === expected
+        );
+      }
+    );
   }
 
   function applyConditions() {
     allFields.forEach(field => {
 
-      if (!field.showIf) return;
+      if (!field.showIf) {
+        return;
+      }
 
       const block =
         document.querySelector(
           `[data-field-block="${CSS.escape(field.id)}"]`
         );
 
-      if (!block) return;
+      if (!block) {
+        return;
+      }
 
       const visible =
-        conditionMet(field.showIf);
+        conditionMet(
+          field.showIf
+        );
 
       block.style.display =
-        visible ? "" : "none";
+        visible
+          ? ""
+          : "none";
 
       if (!visible) {
         state[field.id] =
@@ -770,11 +1002,16 @@
     });
   }
 
-  function showFieldError(id, message) {
-    const el = $(`field-error-${id}`);
+  function showFieldError(
+    id,
+    message
+  ) {
+    const el =
+      $(`field-error-${id}`);
 
     if (el) {
-      el.textContent = message;
+      el.textContent =
+        message;
     }
 
     const block =
@@ -791,16 +1028,22 @@
   }
 
   function clearFieldError(id) {
-    const el = $(`field-error-${id}`);
+    const el =
+      $(`field-error-${id}`);
 
     if (el) {
-      el.textContent = "";
+      el.textContent =
+        "";
     }
   }
 
   function showScreen(index) {
     const screens =
-      [...document.querySelectorAll(".screen")];
+      [
+        ...document.querySelectorAll(
+          ".screen"
+        )
+      ];
 
     if (
       index < 0 ||
@@ -809,14 +1052,17 @@
       return;
     }
 
-    currentScreen = index;
+    currentScreen =
+      index;
 
-    screens.forEach((screen, i) => {
-      screen.classList.toggle(
-        "active",
-        i === index
-      );
-    });
+    screens.forEach(
+      (screen, i) => {
+        screen.classList.toggle(
+          "active",
+          i === index
+        );
+      }
+    );
 
     const questionStart = 2;
     const questionEnd =
@@ -830,33 +1076,37 @@
       index <= questionEnd &&
       questions.length
     ) {
-      progress.hidden = false;
+      progress.hidden =
+        false;
 
       const qIndex =
-        index - questionStart;
+        index -
+        questionStart;
 
       const percent =
         Math.round(
-          ((qIndex + 1) /
-            questions.length) *
-            100
+          (
+            (qIndex + 1) /
+            questions.length
+          ) * 100
         );
 
       $("progressText")
         .textContent =
-        `Tanong ${qIndex + 1} sa ${questions.length}`;
+          `Tanong ${qIndex + 1} sa ${questions.length}`;
 
       $("progressPercent")
         .textContent =
-        `${percent}%`;
+          `${percent}%`;
 
       $("progressFill")
         .style.width =
-        `${percent}%`;
+          `${percent}%`;
     }
 
     else {
-      progress.hidden = true;
+      progress.hidden =
+        true;
     }
 
     window.scrollTo({
@@ -874,17 +1124,22 @@
 
       if (
         field.showIf &&
-        !conditionMet(field.showIf)
+        !conditionMet(
+          field.showIf
+        )
       ) {
         return;
       }
 
       pairs.push({
-        question: field.label,
-        answer: normalizeAnswer(
-          field,
-          state[field.id]
-        )
+        question:
+          field.label,
+
+        answer:
+          normalizeAnswer(
+            field,
+            state[field.id]
+          )
       });
     });
 
@@ -892,7 +1147,9 @@
 
       if (
         field.showIf &&
-        !conditionMet(field.showIf)
+        !conditionMet(
+          field.showIf
+        )
       ) {
         return;
       }
@@ -903,9 +1160,13 @@
           state[field.id]
         );
 
-      if (answer !== "") {
+      if (
+        answer !== ""
+      ) {
         pairs.push({
-          question: field.label,
+          question:
+            field.label,
+
           answer
         });
       }
@@ -916,22 +1177,40 @@
 
   function getUniversalEntries() {
     const mapping =
-      config.googleFormEntries || {};
+      config.googleFormEntries ||
+      {};
 
     const questionEntries =
-      Array.isArray(mapping.questions)
+      Array.isArray(
+        mapping.questions
+      )
         ? mapping.questions
         : [];
 
     return {
-      surveyId: mapping.surveyId,
-      surveyTitle: mapping.surveyTitle,
-      name: mapping.name,
-      section: mapping.section,
-      gender: mapping.gender,
-      date: mapping.date,
-      contact: mapping.contact,
-      questions: questionEntries
+      surveyId:
+        mapping.surveyId,
+
+      surveyTitle:
+        mapping.surveyTitle,
+
+      name:
+        mapping.name,
+
+      section:
+        mapping.section,
+
+      gender:
+        mapping.gender,
+
+      date:
+        mapping.date,
+
+      contact:
+        mapping.contact,
+
+      questions:
+        questionEntries
     };
   }
 
@@ -942,8 +1221,10 @@
   ) {
     if (
       !entry ||
-      String(entry).includes("REPLACE") ||
-      String(entry).trim() === ""
+      String(entry)
+        .includes("REPLACE") ||
+      String(entry)
+        .trim() === ""
     ) {
       return;
     }
@@ -963,7 +1244,9 @@
   }
 
   function buildUniversalFormData() {
-    const form = new FormData();
+    const form =
+      new FormData();
+
     const entries =
       getUniversalEntries();
 
@@ -998,31 +1281,38 @@
     const pairs =
       collectUniversalQuestionPairs();
 
-    if (pairs.length > MAX_QUESTIONS) {
+    if (
+      pairs.length >
+      MAX_QUESTIONS
+    ) {
       throw new Error(
         `Lumampas sa maximum na ${MAX_QUESTIONS} tanong.`
       );
     }
 
-    pairs.forEach((pair, index) => {
+    pairs.forEach(
+      (pair, index) => {
 
-      const slot =
-        entries.questions[index];
+        const slot =
+          entries.questions[index];
 
-      if (!slot) return;
+        if (!slot) {
+          return;
+        }
 
-      appendIfConfigured(
-        form,
-        slot.question,
-        pair.question
-      );
+        appendIfConfigured(
+          form,
+          slot.question,
+          pair.question
+        );
 
-      appendIfConfigured(
-        form,
-        slot.answer,
-        pair.answer
-      );
-    });
+        appendIfConfigured(
+          form,
+          slot.answer,
+          pair.answer
+        );
+      }
+    );
 
     return {
       form,
@@ -1031,21 +1321,30 @@
   }
 
   async function submit() {
-    if (submitting) return;
+    if (submitting) {
+      return;
+    }
 
-    if (!validateFields(feedbackFields)) {
+    if (
+      !validateFields(
+        feedbackFields
+      )
+    ) {
       return;
     }
 
     const action =
       String(
-        config.googleFormActionUrl || ""
+        config.googleFormActionUrl ||
+        ""
       );
 
     if (
       !action ||
       action.includes("PASTE_") ||
-      !action.includes("/formResponse")
+      !action.includes(
+        "/formResponse"
+      )
     ) {
       showSubmitError(
         "Hindi pa nakalagay ang Google Form response URL."
@@ -1059,8 +1358,9 @@
     try {
       built =
         buildUniversalFormData();
+    }
 
-    } catch (error) {
+    catch (error) {
       showSubmitError(
         error.message
       );
@@ -1073,16 +1373,18 @@
     const btn =
       $("submitBtn");
 
-    btn.disabled = true;
+    btn.disabled =
+      true;
+
     btn.textContent =
       "Isinusumite...";
 
     try {
 
-      // Google Forms uses the same URL-encoded
-      // format as a standard HTML form.
-      // Keep no-cors because Google Forms
-      // does not expose its response to this site.
+      /*
+       * KEEP THIS GOOGLE FORMS
+       * SUBMISSION METHOD.
+       */
 
       const body =
         new URLSearchParams();
@@ -1096,22 +1398,26 @@
         }
       );
 
-      await fetch(action, {
-        method: "POST",
-        mode: "no-cors",
+      await fetch(
+        action,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type":
-            "application/x-www-form-urlencoded;charset=UTF-8"
-        },
+          mode: "no-cors",
 
-        body:
-          body.toString()
-      });
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded;charset=UTF-8"
+          },
 
-      // ==========================================
-      // SUCCESS
-      // ==========================================
+          body:
+            body.toString()
+        }
+      );
+
+      /*
+       * SUCCESS
+       */
 
       renderSummary(
         built.pairs
@@ -1121,70 +1427,95 @@
         questions.length + 2
       );
 
-      // The survey is already submitted.
-      // Keep the restart button disabled
-      // for 5 seconds to prevent accidental
-      // immediate resubmission.
+      /*
+       * 5-SECOND COOLDOWN
+       *
+       * This happens AFTER the
+       * successful submission.
+       *
+       * It does NOT change the
+       * Google Forms request.
+       */
 
       const restartBtn =
         $("restartBtn");
 
+      if (!restartBtn) {
+        submitting = false;
+        return;
+      }
+
       let remaining = 5;
 
-      restartBtn.disabled = true;
+      restartBtn.disabled =
+        true;
+
       restartBtn.textContent =
         `Maghintay ${remaining}s...`;
 
       const cooldown =
-        setInterval(() => {
+        setInterval(
+          () => {
 
-          remaining--;
+            remaining--;
 
-          if (remaining > 0) {
+            if (
+              remaining > 0
+            ) {
+              restartBtn.textContent =
+                `Maghintay ${remaining}s...`;
+            }
 
-            restartBtn.textContent =
-              `Maghintay ${remaining}s...`;
+            else {
+              clearInterval(
+                cooldown
+              );
 
-          } else {
+              restartBtn.disabled =
+                false;
 
-            clearInterval(
-              cooldown
-            );
+              restartBtn.textContent =
+                "Bagong Sagot";
 
-            restartBtn.disabled =
-              false;
+              submitting =
+                false;
+            }
 
-            restartBtn.textContent =
-              "Bagong Sagot";
+          },
+          1000
+        );
 
-            submitting = false;
-          }
+    }
 
-        }, 1000);
-
-    } catch (error) {
-
-      showSubmitError(
-        "Hindi naisumite ang sagot. Pakisuri ang koneksiyon at subukan muli."
-      );
+    catch (error) {
 
       console.error(
         error
       );
 
-      // If submission failed,
-      // allow the user to retry immediately.
+      showSubmitError(
+        "Hindi naisumite ang sagot. Pakisuri ang koneksiyon at subukan muli."
+      );
 
-      submitting = false;
+      /*
+       * If the request actually
+       * fails, allow retry.
+       */
 
-      btn.disabled = false;
+      submitting =
+        false;
+
+      btn.disabled =
+        false;
 
       btn.textContent =
         "Isumite ang Sarbey";
     }
   }
 
-  function showSubmitError(message) {
+  function showSubmitError(
+    message
+  ) {
     const el =
       $("error-submit");
 
@@ -1196,7 +1527,9 @@
     );
   }
 
-  function renderSummary(pairs) {
+  function renderSummary(
+    pairs
+  ) {
     const respondentRows =
       fields
         .filter(field => {
@@ -1238,12 +1571,15 @@
           <div class="summary-row">
 
             <span class="summary-key">
-              ${esc(pair.question)}
+              ${esc(
+                pair.question
+              )}
             </span>
 
             <span class="summary-val">
               ${esc(
-                pair.answer || "—"
+                pair.answer ||
+                "—"
               )}
             </span>
 
@@ -1255,82 +1591,98 @@
     $("summary").innerHTML =
       respondentRows +
       questionRows ||
-      `<div class="small">
-        Walang detalye.
-      </div>`;
+      `
+        <div class="small">
+          Walang detalye.
+        </div>
+      `;
   }
 
   function reset() {
 
-    allFields.forEach(field => {
+    /*
+     * Reset all survey fields.
+     */
 
-      state[field.id] =
-        field.defaultValue ??
-        (
-          field.type === "rating"
-            ? 0
-            : field.type === "checkbox"
-              ? []
-              : ""
-        );
+    allFields.forEach(
+      field => {
 
-      const input =
-        $(`field-${field.id}`);
-
-      if (
-        input &&
-        "value" in input
-      ) {
-        input.value = "";
-      }
-
-      const host =
-        $(`rating-${field.id}`);
-
-      if (host) {
-
-        host
-          .querySelectorAll("button")
-          .forEach(b =>
-            b.classList.remove(
-              "selected"
-            )
+        state[field.id] =
+          field.defaultValue ??
+          (
+            field.type === "rating"
+              ? 0
+              : field.type === "checkbox"
+                ? []
+                : ""
           );
 
-        const readout =
-          $(`readout-${field.id}`);
+        const input =
+          $(`field-${field.id}`);
 
-        if (readout) {
-          readout.textContent =
-            "Wala pang napipili.";
+        if (
+          input &&
+          "value" in input
+        ) {
+          input.value =
+            "";
         }
-      }
 
-      const choices =
-        $(`choices-${field.id}`);
+        const host =
+          $(`rating-${field.id}`);
 
-      if (choices) {
+        if (host) {
 
-        choices
-          .querySelectorAll(".option-card")
-          .forEach(b => {
-
-            b.classList.remove(
-              "selected"
+          host
+            .querySelectorAll(
+              "button"
+            )
+            .forEach(
+              b =>
+                b.classList.remove(
+                  "selected"
+                )
             );
 
-            b.setAttribute(
-              "aria-checked",
-              "false"
+          const readout =
+            $(
+              `readout-${field.id}`
             );
 
-          });
-      }
+          if (readout) {
+            readout.textContent =
+              "Wala pang napipili.";
+          }
+        }
 
-      clearFieldError(
-        field.id
-      );
-    });
+        const choices =
+          $(`choices-${field.id}`);
+
+        if (choices) {
+
+          choices
+            .querySelectorAll(
+              ".option-card"
+            )
+            .forEach(b => {
+
+              b.classList.remove(
+                "selected"
+              );
+
+              b.setAttribute(
+                "aria-checked",
+                "false"
+              );
+
+            });
+        }
+
+        clearFieldError(
+          field.id
+        );
+      }
+    );
 
     $("error-submit")
       .classList.remove(
@@ -1341,6 +1693,10 @@
 
     showScreen(0);
   }
+
+  /*
+   * INITIALIZE
+   */
 
   render();
 
