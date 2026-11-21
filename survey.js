@@ -7,998 +7,698 @@
 
   const fields = Array.isArray(config.fields) ? config.fields : [];
   const questions = Array.isArray(config.questions) ? config.questions : [];
-  const feedbackFields = Array.isArray(config.feedbackFields) ? config.feedbackFields : [];
+  const feedbackFields = Array.isArray(config.feedbackFields)
+    ? config.feedbackFields
+    : [];
+
   const allFields = [...fields, ...questions, ...feedbackFields];
 
-  const MAX_QUESTIONS = Number(config.maxUniversalQuestions || 30);
-  const state = {};
-  let currentScreen = 0;
   let submitting = false;
+  let currentScreen = 0;
 
-  allFields.forEach(field => {
-    state[field.id] =
-      field.defaultValue ??
-      (
-        field.type === "rating"
-          ? 0
-          : field.type === "checkbox"
-            ? []
-            : ""
-      );
-  });
-
-  function esc(value) {
+  const esc = (value) => {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
-  }
+  };
 
   function optionValue(option) {
-    return typeof option === "object"
-      ? String(option.value ?? option.label ?? "")
-      : String(option);
+    if (option && typeof option === "object") {
+      return String(
+        option.value ??
+          option.id ??
+          option.label ??
+          option.text ??
+          ""
+      );
+    }
+
+    return String(option ?? "");
   }
 
   function optionLabel(option) {
-    return typeof option === "object"
-      ? String(option.label ?? option.value ?? "")
-      : String(option);
+    if (option && typeof option === "object") {
+      return String(
+        option.label ??
+          option.text ??
+          option.value ??
+          option.id ??
+          ""
+      );
+    }
+
+    return String(option ?? "");
   }
 
-  function normalizeAnswer(field, rawValue) {
-    if (field.type === "checkbox") {
-      const values = Array.isArray(rawValue) ? rawValue : [];
-
-      return values
-        .map(value => {
-          const match = (field.options || [])
-            .find(opt => optionValue(opt) === String(value));
-
-          return match
-            ? optionLabel(match)
-            : String(value);
-        })
-        .filter(Boolean)
-        .join(", ");
-    }
-
-    if (
-      field.type === "radio" ||
-      field.type === "select"
-    ) {
-      const match = (field.options || [])
-        .find(opt => optionValue(opt) === String(rawValue));
-
-      return match
-        ? optionLabel(match)
-        : String(rawValue ?? "");
-    }
-
-    return String(rawValue ?? "");
+  function normalizeAnswer(value) {
+    return String(value ?? "").trim();
   }
 
   function render() {
+    if (!root) return;
+
     root.innerHTML = `
-      <div class="top-bar">
-        <span class="school-badge">
-          ${esc(config.schoolName || "Sarbey")}
-        </span>
+      <div id="surveyApp">
+        <div id="surveyProgress"></div>
+
+        <section id="surveyScreens"></section>
+
+        <div id="surveyActions">
+          <button
+            type="button"
+            id="backBtn"
+            class="secondary-btn"
+          >
+            Bumalik
+          </button>
+
+          <button
+            type="button"
+            id="nextBtn"
+            class="primary-btn"
+          >
+            Susunod
+          </button>
+
+          <button
+            type="button"
+            id="submitBtn"
+            class="primary-btn"
+          >
+            Isumite ang Sarbey
+          </button>
+        </div>
       </div>
-
-      <div
-        class="progress-wrapper"
-        id="progressWrapper"
-        hidden
-      >
-        <div class="progress-meta">
-          <span id="progressText">Tanong</span>
-          <span id="progressPercent">0%</span>
-        </div>
-
-        <div class="progress-track">
-          <div
-            class="progress-fill"
-            id="progressFill"
-          ></div>
-        </div>
-      </div>
-
-      <main class="survey-main">
-        <div class="survey-card">
-
-          <section
-            class="screen active"
-            id="screen-welcome"
-          >
-            <span class="eyebrow">
-              ${esc(config.welcomeEyebrow || "Sarbey")}
-            </span>
-
-            <h1>
-              ${esc(config.title || "Sarbey")}
-            </h1>
-
-            <p class="subtitle">
-              ${esc(config.description || "")}
-            </p>
-
-            ${
-              config.notice
-                ? `<div class="notice">${esc(config.notice)}</div>`
-                : ""
-            }
-
-            <button
-              class="btn btn-primary btn-full"
-              id="startBtn"
-              type="button"
-            >
-              ${esc(
-                config.startLabel ||
-                "Simulan ang Sarbey"
-              )}
-            </button>
-          </section>
-
-          <section
-            class="screen"
-            id="screen-info"
-          >
-            <span class="eyebrow">
-              Impormasyon
-            </span>
-
-            <h2>
-              Impormasyon ng Kalahok
-            </h2>
-
-            <p class="subtitle">
-              Ilagay ang kinakailangang impormasyon bago magpatuloy.
-            </p>
-
-            <div id="infoFields"></div>
-
-            <div
-              class="validation-msg"
-              id="error-info"
-              role="alert"
-            ></div>
-
-            <div class="nav-actions">
-
-              <button
-                class="btn btn-secondary"
-                id="backInfo"
-                type="button"
-              >
-                Bumalik
-              </button>
-
-              <button
-                class="btn btn-primary"
-                id="nextInfo"
-                type="button"
-              >
-                Magpatuloy
-              </button>
-
-            </div>
-          </section>
-
-          <div id="questionScreens"></div>
-
-          <section
-            class="screen"
-            id="screen-feedback"
-          >
-            <span class="eyebrow">
-              Huling Hakbang
-            </span>
-
-            <h2>
-              Feedback sa Sarbey
-            </h2>
-
-            <p class="subtitle">
-              Opsyonal ang bahaging ito.
-            </p>
-
-            <div id="feedbackFields"></div>
-
-            <div
-              class="validation-msg"
-              id="error-submit"
-              role="alert"
-            ></div>
-
-            <div class="nav-actions">
-
-              <button
-                class="btn btn-secondary"
-                id="backFeedback"
-                type="button"
-              >
-                Bumalik
-              </button>
-
-              <button
-                class="btn btn-primary"
-                id="submitBtn"
-                type="button"
-              >
-                Isumite ang Sarbey
-              </button>
-
-            </div>
-          </section>
-
-          <section
-            class="screen"
-            id="screen-complete"
-          >
-            <span class="eyebrow">
-              Tapos na
-            </span>
-
-            <h2>
-              Salamat sa iyong pagsagot.
-            </h2>
-
-            <p class="subtitle">
-              ${esc(
-                config.completeMessage ||
-                "Naisumite na ang iyong sagot."
-              )}
-            </p>
-
-            <div
-              class="summary-card"
-              id="summary"
-            ></div>
-
-            <button
-              class="btn btn-secondary btn-full"
-              id="restartBtn"
-              type="button"
-            >
-              Bagong Sagot
-            </button>
-          </section>
-
-        </div>
-      </main>
     `;
+
+    renderInfoFields();
+    renderQuestions();
+    renderFeedback();
+
+    bindNavigation();
+    setAutomaticDate();
+
+    showScreen(0);
   }
 
-  function fieldMarkup(field) {
+  function fieldMarkup(field, index) {
+    const id = String(field.id || field.name || `field_${index}`);
+    const label = String(field.label || field.title || field.name || "");
+    const type = String(field.type || "text").toLowerCase();
+
     const required = field.required
-      ? `<span class="badge-optional">Kinakailangan</span>`
-      : `<span class="badge-optional">Opsyonal</span>`;
+      ? `<span class="required-mark">*</span>`
+      : "";
 
-    let control = "";
+    const help = field.help
+      ? `<small class="field-help">${esc(field.help)}</small>`
+      : "";
 
-    if (
-      field.type === "text" ||
-      field.type === "email"
-    ) {
-      control = `
-        <input
-          id="field-${esc(field.id)}"
-          type="${field.type}"
-          ${
-            field.placeholder
-              ? `placeholder="${esc(field.placeholder)}"`
-              : ""
-          }
-          autocomplete="off"
-        >
-      `;
-    }
+    if (type === "textarea") {
+      return `
+        <div class="form-field" data-field="${esc(id)}">
+          <label for="${esc(id)}">
+            ${esc(label)} ${required}
+          </label>
 
-    else if (field.type === "textarea") {
-      control = `
-        <textarea
-          id="field-${esc(field.id)}"
-          placeholder="${esc(
-            field.placeholder || ""
-          )}"
-        ></textarea>
-      `;
-    }
+          <textarea
+            id="${esc(id)}"
+            name="${esc(id)}"
+            ${field.required ? "required" : ""}
+            ${field.placeholder ? `placeholder="${esc(field.placeholder)}"` : ""}
+          ></textarea>
 
-    else if (field.type === "date") {
-      control = `
-        <input
-          id="field-${esc(field.id)}"
-          type="text"
-          readonly
-        >
-      `;
-    }
+          ${help}
 
-    else if (field.type === "radio") {
-      control = `
-        <div
-          class="choice-grid"
-          id="choices-${esc(field.id)}"
-          role="radiogroup"
-        ></div>
-      `;
-    }
-
-    else if (field.type === "checkbox") {
-      control = `
-        <div
-          class="choice-grid"
-          id="choices-${esc(field.id)}"
-          role="group"
-        ></div>
-      `;
-    }
-
-    else if (field.type === "select") {
-      control = `
-        <select
-          id="field-${esc(field.id)}"
-        ></select>
-      `;
-    }
-
-    else if (field.type === "rating") {
-      const max = Number(field.max || 5);
-
-      control = `
-        <div
-          class="rating"
-          id="rating-${esc(field.id)}"
-          role="radiogroup"
-        ></div>
-
-        <div
-          class="small"
-          id="readout-${esc(field.id)}"
-        >
-          Wala pang napipili.
+          <div
+            class="field-error"
+            id="${esc(id)}_error"
+            aria-live="polite"
+          ></div>
         </div>
       `;
+    }
+
+    if (
+      type === "radio" ||
+      type === "checkbox" ||
+      type === "select"
+    ) {
+      return renderFieldControl(field, index);
     }
 
     return `
-      <div
-        class="form-group"
-        data-field-block="${esc(field.id)}"
-      >
-
-        <label
-          class="form-label"
-          for="${
-            field.type === "radio" ||
-            field.type === "checkbox"
-              ? `choices-${field.id}`
-              : `field-${field.id}`
-          }"
-        >
-
-          <span>
-            ${esc(field.label)}
-          </span>
-
-          ${required}
-
+      <div class="form-field" data-field="${esc(id)}">
+        <label for="${esc(id)}">
+          ${esc(label)} ${required}
         </label>
 
-        ${
-          field.helper
-            ? `
-              <div class="helper">
-                ${esc(field.helper)}
-              </div>
-            `
-            : ""
-        }
+        <input
+          id="${esc(id)}"
+          name="${esc(id)}"
+          type="${esc(type)}"
+          ${field.required ? "required" : ""}
+          ${field.readonly ? "readonly" : ""}
+          ${field.placeholder ? `placeholder="${esc(field.placeholder)}"` : ""}
+        />
 
-        ${control}
+        ${help}
 
         <div
-          class="error"
-          id="field-error-${esc(field.id)}"
+          class="field-error"
+          id="${esc(id)}_error"
+          aria-live="polite"
         ></div>
-
       </div>
     `;
   }
 
   function renderInfoFields() {
-    $("infoFields").innerHTML =
-      fields.map(fieldMarkup).join("");
+    const container = $("surveyScreens");
 
-    fields.forEach(renderFieldControl);
+    if (!container) return;
+
+    const screen = document.createElement("section");
+    screen.className = "survey-screen";
+    screen.dataset.screen = "0";
+
+    screen.innerHTML = `
+      <div class="survey-card">
+        <div class="survey-heading">
+          <span class="survey-kicker">IMPORMASYON</span>
+          <h2>Iyong Impormasyon</h2>
+          <p>
+            Pakilagyan nang tama ang mga kinakailangang impormasyon
+            bago magpatuloy.
+          </p>
+        </div>
+
+        <div class="fields-grid">
+          ${fields.map((field, i) => fieldMarkup(field, i)).join("")}
+        </div>
+      </div>
+    `;
+
+    container.appendChild(screen);
   }
 
   function renderQuestions() {
-    const host =
-      $("questionScreens");
+    const container = $("surveyScreens");
 
-    host.innerHTML =
-      questions.map((q, i) => `
+    if (!container) return;
 
-        <section
-          class="screen"
-          id="screen-q-${i}"
-        >
+    questions.forEach((question, index) => {
+      const screenNumber = index + 1;
 
-          <span class="eyebrow">
-            Tanong ${i + 1} sa ${questions.length}
-          </span>
+      const screen = document.createElement("section");
+      screen.className = "survey-screen";
+      screen.dataset.screen = String(screenNumber);
+
+      screen.innerHTML = `
+        <div class="survey-card question-card">
+          <div class="question-number">
+            TANONG ${index + 1}
+          </div>
 
           <h2>
-            ${esc(q.label)}
+            ${esc(
+              question.label ||
+                question.question ||
+                question.title ||
+                ""
+            )}
           </h2>
 
           ${
-            q.helper
-              ? `
-                <p class="subtitle">
-                  ${esc(q.helper)}
-                </p>
-              `
+            question.description
+              ? `<p class="question-description">${esc(
+                  question.description
+                )}</p>`
               : ""
           }
 
-          ${fieldMarkup(q)}
+          ${renderFieldControl(question, index)}
 
           <div
-            class="validation-msg"
-            id="error-q-${i}"
-            role="alert"
+            class="field-error"
+            id="${esc(
+              String(
+                question.id ||
+                  question.name ||
+                  `question_${index}`
+              )
+            )}_error"
+            aria-live="polite"
           ></div>
+        </div>
+      `;
 
-          <div class="nav-actions">
-
-            <button
-              class="btn btn-secondary"
-              type="button"
-              data-back-q="${i}"
-            >
-              Bumalik
-            </button>
-
-            <button
-              class="btn btn-primary"
-              type="button"
-              data-next-q="${i}"
-            >
-              ${
-                i === questions.length - 1
-                  ? "Magpatuloy"
-                  : "Susunod"
-              }
-            </button>
-
-          </div>
-
-        </section>
-
-      `).join("");
-
-    questions.forEach(
-      renderFieldControl
-    );
+      container.appendChild(screen);
+    });
   }
 
   function renderFeedback() {
-    $("feedbackFields").innerHTML =
-      feedbackFields
-        .map(fieldMarkup)
-        .join("");
+    const container = $("surveyScreens");
 
-    feedbackFields.forEach(
-      renderFieldControl
-    );
+    if (!container) return;
+
+    const feedbackScreenNumber = questions.length + 1;
+
+    const screen = document.createElement("section");
+    screen.className = "survey-screen";
+    screen.dataset.screen = String(feedbackScreenNumber);
+
+    screen.innerHTML = `
+      <div class="survey-card feedback-card">
+        <div class="survey-heading">
+          <span class="survey-kicker">PANGHULING BAHAGI</span>
+          <h2>Feedback</h2>
+          <p>
+            Opsyonal ang feedback na ito.
+          </p>
+        </div>
+
+        <div class="fields-grid">
+          ${feedbackFields
+            .map((field, i) => fieldMarkup(field, i))
+            .join("")}
+        </div>
+      </div>
+    `;
+
+    container.appendChild(screen);
   }
 
-  function renderFieldControl(field) {
+  function renderFieldControl(field, index) {
+    const id = String(
+      field.id ||
+        field.name ||
+        `field_${index}`
+    );
 
-    if (
-      field.type === "text" ||
-      field.type === "email" ||
-      field.type === "textarea"
-    ) {
-      const el =
-        $(`field-${field.id}`);
+    const label = String(
+      field.label ||
+        field.question ||
+        field.title ||
+        field.name ||
+        ""
+    );
 
-      if (!el) return;
+    const type = String(
+      field.type || "text"
+    ).toLowerCase();
 
-      el.addEventListener(
-        "input",
-        () => {
-          state[field.id] =
-            el.value;
+    const options = Array.isArray(field.options)
+      ? field.options
+      : [];
 
-          clearFieldError(
-            field.id
-          );
-        }
-      );
+    const required = field.required
+      ? `<span class="required-mark">*</span>`
+      : "";
 
-      if (state[field.id]) {
-        el.value =
-          state[field.id];
-      }
+    if (type === "radio") {
+      return `
+        <div
+          class="choice-group"
+          data-field="${esc(id)}"
+        >
+          ${
+            label
+              ? `<div class="choice-label">
+                  ${esc(label)} ${required}
+                </div>`
+              : ""
+          }
 
-      return;
+          <div class="choice-options">
+            ${options
+              .map((option, optionIndex) => {
+                const value = optionValue(option);
+                const optionText = optionLabel(option);
+
+                return `
+                  <label class="choice-option">
+                    <input
+                      type="radio"
+                      name="${esc(id)}"
+                      value="${esc(value)}"
+                      ${field.required ? "required" : ""}
+                    />
+
+                    <span class="choice-indicator"></span>
+
+                    <span class="choice-text">
+                      ${esc(optionText)}
+                    </span>
+                  </label>
+                `;
+              })
+              .join("")}
+          </div>
+        </div>
+      `;
     }
 
-    if (field.type === "date") {
-      return;
+    if (type === "checkbox") {
+      return `
+        <div
+          class="choice-group"
+          data-field="${esc(id)}"
+        >
+          ${
+            label
+              ? `<div class="choice-label">
+                  ${esc(label)} ${required}
+                </div>`
+              : ""
+          }
+
+          <div class="choice-options">
+            ${options
+              .map((option, optionIndex) => {
+                const value = optionValue(option);
+                const optionText = optionLabel(option);
+
+                return `
+                  <label class="choice-option">
+                    <input
+                      type="checkbox"
+                      name="${esc(id)}"
+                      value="${esc(value)}"
+                    />
+
+                    <span class="choice-indicator"></span>
+
+                    <span class="choice-text">
+                      ${esc(optionText)}
+                    </span>
+                  </label>
+                `;
+              })
+              .join("")}
+          </div>
+        </div>
+      `;
     }
 
-    if (field.type === "select") {
-      const el =
-        $(`field-${field.id}`);
+    if (type === "select") {
+      return `
+        <div
+          class="form-field"
+          data-field="${esc(id)}"
+        >
+          <label for="${esc(id)}">
+            ${esc(label)} ${required}
+          </label>
 
-      if (!el) return;
+          <select
+            id="${esc(id)}"
+            name="${esc(id)}"
+            ${field.required ? "required" : ""}
+          >
+            <option value="">Pumili ng sagot</option>
 
-      el.innerHTML =
-        `<option value="">Pumili ng sagot</option>` +
-        (field.options || [])
-          .map(opt => `
-            <option
-              value="${esc(
-                optionValue(opt)
-              )}"
-            >
-              ${esc(
-                optionLabel(opt)
-              )}
-            </option>
-          `)
-          .join("");
+            ${options
+              .map((option) => {
+                const value = optionValue(option);
+                const optionText = optionLabel(option);
 
-      el.addEventListener(
-        "change",
-        () => {
-          state[field.id] =
-            el.value;
+                return `
+                  <option value="${esc(value)}">
+                    ${esc(optionText)}
+                  </option>
+                `;
+              })
+              .join("")}
+          </select>
 
-          clearFieldError(
-            field.id
-          );
-
-          applyConditions();
-        }
-      );
-
-      return;
+          <div
+            class="field-error"
+            id="${esc(id)}_error"
+            aria-live="polite"
+          ></div>
+        </div>
+      `;
     }
 
-    if (
-      field.type === "radio" ||
-      field.type === "checkbox"
-    ) {
-      const host =
-        $(`choices-${field.id}`);
+    return `
+      <div class="form-field">
+        <label for="${esc(id)}">
+          ${esc(label)} ${required}
+        </label>
 
-      if (!host) return;
+        <input
+          id="${esc(id)}"
+          name="${esc(id)}"
+          type="text"
+          ${field.required ? "required" : ""}
+        />
 
-      host.innerHTML =
-        (field.options || [])
-          .map(opt => {
-
-            const value =
-              optionValue(opt);
-
-            const label =
-              optionLabel(opt);
-
-            return `
-              <button
-                type="button"
-                class="option-card"
-                data-choice="${esc(value)}"
-              >
-
-                <span
-                  class="${
-                    field.type === "checkbox"
-                      ? "checkbox-indicator"
-                      : "option-indicator"
-                  }"
-                ></span>
-
-                <span>
-                  ${esc(label)}
-                </span>
-
-              </button>
-            `;
-          })
-          .join("");
-
-      host
-        .querySelectorAll(
-          ".option-card"
-        )
-        .forEach(btn => {
-
-          btn.addEventListener(
-            "click",
-            () => {
-
-              const value =
-                btn.dataset.choice;
-
-              if (
-                field.type === "radio"
-              ) {
-                state[field.id] =
-                  value;
-
-                host
-                  .querySelectorAll(
-                    ".option-card"
-                  )
-                  .forEach(x => {
-
-                    const selected =
-                      x === btn;
-
-                    x.classList.toggle(
-                      "selected",
-                      selected
-                    );
-
-                    x.setAttribute(
-                      "aria-checked",
-                      String(
-                        selected
-                      )
-                    );
-                  });
-              }
-
-              else {
-                if (
-                  !Array.isArray(
-                    state[field.id]
-                  )
-                ) {
-                  state[field.id] =
-                    [];
-                }
-
-                const index =
-                  state[field.id]
-                    .indexOf(value);
-
-                if (index >= 0) {
-                  state[field.id]
-                    .splice(index, 1);
-
-                  btn.classList.remove(
-                    "selected"
-                  );
-                }
-
-                else {
-                  state[field.id]
-                    .push(value);
-
-                  btn.classList.add(
-                    "selected"
-                  );
-                }
-
-                btn.setAttribute(
-                  "aria-checked",
-                  String(
-                    btn.classList.contains(
-                      "selected"
-                    )
-                  )
-                );
-              }
-
-              clearFieldError(
-                field.id
-              );
-
-              applyConditions();
-            }
-          );
-        });
-
-      return;
-    }
-
-    if (field.type === "rating") {
-      const host =
-        $(`rating-${field.id}`);
-
-      if (!host) return;
-
-      const max =
-        Number(field.max || 5);
-
-      host.innerHTML =
-        Array.from(
-          { length: max },
-          (_, i) => `
-            <button
-              type="button"
-              data-rating="${i + 1}"
-              aria-label="${i + 1} sa ${max}"
-            >
-              ${i + 1}
-            </button>
-          `
-        )
-        .join("");
-
-      host
-        .querySelectorAll(
-          "button"
-        )
-        .forEach(btn => {
-
-          btn.addEventListener(
-            "click",
-            () => {
-
-              state[field.id] =
-                Number(
-                  btn.dataset.rating
-                );
-
-              host
-                .querySelectorAll(
-                  "button"
-                )
-                .forEach(x =>
-                  x.classList.toggle(
-                    "selected",
-                    Number(
-                      x.dataset.rating
-                    ) <=
-                      state[field.id]
-                  )
-                );
-
-              $(`readout-${field.id}`)
-                .textContent =
-                  `${state[field.id]} / ${max}`;
-
-              clearFieldError(
-                field.id
-              );
-            }
-          );
-        });
-    }
+        <div
+          class="field-error"
+          id="${esc(id)}_error"
+          aria-live="polite"
+        ></div>
+      </div>
+    `;
   }
 
   function setAutomaticDate() {
-    fields
-      .filter(
-        f => f.type === "date"
-      )
-      .forEach(f => {
+    const dateField = fields.find((field) => {
+      const id = String(
+        field.id ||
+          field.name ||
+          ""
+      ).toLowerCase();
 
-        const el =
-          $(`field-${f.id}`);
+      const label = String(
+        field.label ||
+          field.name ||
+          ""
+      ).toLowerCase();
 
-        if (!el) return;
+      return (
+        id === "date" ||
+        id.includes("date") ||
+        label.includes("petsa") ||
+        label.includes("date")
+      );
+    });
 
-        const date =
-          new Date()
-            .toLocaleDateString(
-              "fil-PH",
-              {
-                year: "numeric",
-                month: "long",
-                day: "numeric"
-              }
-            );
+    if (!dateField) return;
 
-        state[f.id] =
-          date;
+    const id = String(
+      dateField.id ||
+        dateField.name ||
+        ""
+    );
 
-        el.value =
-          date;
-      });
+    const input = $(id);
+
+    if (!input) return;
+
+    if (
+      String(dateField.type || "").toLowerCase() ===
+      "date"
+    ) {
+      const now = new Date();
+
+      const year = now.getFullYear();
+      const month = String(
+        now.getMonth() + 1
+      ).padStart(2, "0");
+      const day = String(
+        now.getDate()
+      ).padStart(2, "0");
+
+      input.value =
+        `${year}-${month}-${day}`;
+    }
   }
 
   function bindNavigation() {
+    const backBtn = $("backBtn");
+    const nextBtn = $("nextBtn");
+    const submitBtn = $("submitBtn");
 
-    $("startBtn").onclick =
-      () => showScreen(1);
-
-    $("backInfo").onclick =
-      () => showScreen(0);
-
-    $("nextInfo").onclick =
-      () => {
-
-        if (
-          validateFields(fields)
-        ) {
-          showScreen(2);
+    if (backBtn) {
+      backBtn.addEventListener("click", () => {
+        if (currentScreen > 0) {
+          showScreen(currentScreen - 1);
         }
-      };
+      });
+    }
 
-    questions.forEach((q, i) => {
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        if (
+          !validateCurrentScreen()
+        ) {
+          return;
+        }
 
-      $(`screen-q-${i}`)
-        .querySelector(
-          `[data-back-q="${i}"]`
-        )
-        .onclick =
-        () => showScreen(i + 1);
+        showScreen(currentScreen + 1);
+      });
+    }
 
-      $(`screen-q-${i}`)
-        .querySelector(
-          `[data-next-q="${i}"]`
-        )
-        .onclick =
-        () => {
-
-          if (
-            !validateFields([q])
-          ) {
-            return;
-          }
-
-          showScreen(i + 3);
-        };
-    });
-
-    $("backFeedback").onclick =
-      () =>
-        showScreen(
-          questions.length + 1
-        );
-
-    $("submitBtn").onclick =
-      submit;
-
-    $("restartBtn").onclick =
-      reset;
+    if (submitBtn) {
+      submitBtn.addEventListener("click", submit);
+    }
   }
 
-  function isEmpty(field, value) {
-
-    if (
-      field.type === "checkbox"
-    ) {
-      return (
-        !Array.isArray(value) ||
-        value.length === 0
-      );
-    }
-
-    if (
-      field.type === "rating"
-    ) {
-      return Number(value) === 0;
-    }
-
+  function isEmpty(value) {
     return (
-      value === "" ||
-      value === null ||
-      value === undefined
+      String(value ?? "").trim() === ""
     );
   }
 
-  function validateFields(list) {
+  function validateFields(fieldList) {
     let valid = true;
 
-    list.forEach(field => {
+    fieldList.forEach((field) => {
+      if (!field.required) return;
+
+      const id = String(
+        field.id ||
+          field.name ||
+          ""
+      );
+
+      const type = String(
+        field.type || "text"
+      ).toLowerCase();
+
+      let value = "";
 
       if (
-        field.showIf &&
-        !conditionMet(
-          field.showIf
-        )
+        type === "radio"
       ) {
-        return;
+        const checked = document.querySelector(
+          `input[name="${CSS.escape(id)}"]:checked`
+        );
+
+        value = checked
+          ? checked.value
+          : "";
+      } else if (
+        type === "checkbox"
+      ) {
+        const checked = document.querySelectorAll(
+          `input[name="${CSS.escape(id)}"]:checked`
+        );
+
+        value = Array.from(checked)
+          .map((item) => item.value)
+          .join(", ");
+      } else {
+        const input = $(id);
+
+        value = input
+          ? input.value
+          : "";
       }
 
-      const value =
-        state[field.id];
-
-      if (
-        field.required &&
-        isEmpty(
-          field,
-          value
-        )
-      ) {
+      if (isEmpty(value)) {
         showFieldError(
-          field.id,
-          "Pakisagutan ang kinakailangang tanong."
+          id,
+          "Kailangan mong sagutin ang field na ito."
         );
 
         valid = false;
-      }
-
-      else {
-        clearFieldError(
-          field.id
-        );
+      } else {
+        clearFieldError(id);
       }
     });
 
     return valid;
   }
 
-  function conditionMet(condition) {
-    return Object.entries(
-      condition || {}
-    ).every(
-      ([id, expected]) => {
+  function validateCurrentScreen() {
+    if (currentScreen === 0) {
+      return validateFields(fields);
+    }
 
-        const current =
-          state[id];
+    if (
+      currentScreen >= 1 &&
+      currentScreen <= questions.length
+    ) {
+      const question =
+        questions[currentScreen - 1];
 
-        if (
-          Array.isArray(current)
-        ) {
-          return Array.isArray(
-            expected
-          )
-            ? expected.every(
-                v =>
-                  current.includes(v)
-              )
-            : current.includes(
-                expected
-              );
-        }
+      return validateFields([
+        question
+      ]);
+    }
 
-        return (
-          current === expected
-        );
-      }
+    return true;
+  }
+
+  function conditionMet(field) {
+    if (!field.condition) {
+      return true;
+    }
+
+    const condition =
+      field.condition;
+
+    const targetId =
+      String(
+        condition.field ||
+          condition.id ||
+          ""
+      );
+
+    if (!targetId) {
+      return true;
+    }
+
+    const target =
+      $(targetId);
+
+    if (!target) {
+      return true;
+    }
+
+    const expected =
+      String(
+        condition.value ??
+          ""
+      );
+
+    return (
+      normalizeAnswer(
+        target.value
+      ) ===
+      normalizeAnswer(
+        expected
+      )
     );
   }
 
   function applyConditions() {
-    allFields.forEach(field => {
+    allFields.forEach((field) => {
+      const id = String(
+        field.id ||
+          field.name ||
+          ""
+      );
 
-      if (!field.showIf) {
-        return;
-      }
+      if (!id) return;
 
-      const block =
+      const wrapper =
         document.querySelector(
-          `[data-field-block="${CSS.escape(field.id)}"]`
+          `[data-field="${CSS.escape(id)}"]`
         );
 
-      if (!block) {
-        return;
-      }
+      if (!wrapper) return;
 
-      const visible =
-        conditionMet(
-          field.showIf
-        );
-
-      block.style.display =
-        visible
+      wrapper.style.display =
+        conditionMet(field)
           ? ""
           : "none";
-
-      if (!visible) {
-        state[field.id] =
-          field.type === "checkbox"
-            ? []
-            : field.type === "rating"
-              ? 0
-              : "";
-      }
     });
   }
 
@@ -1006,44 +706,40 @@
     id,
     message
   ) {
-    const el =
-      $(`field-error-${id}`);
+    const error =
+      $(`${id}_error`);
 
-    if (el) {
-      el.textContent =
-        message;
-    }
+    if (!error) return;
 
-    const block =
-      document.querySelector(
-        `[data-field-block="${CSS.escape(id)}"]`
-      );
+    error.textContent =
+      message;
 
-    if (block) {
-      block.scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    }
+    error.classList.add(
+      "visible"
+    );
   }
 
   function clearFieldError(id) {
-    const el =
-      $(`field-error-${id}`);
+    const error =
+      $(`${id}_error`);
 
-    if (el) {
-      el.textContent =
-        "";
-    }
+    if (!error) return;
+
+    error.textContent = "";
+    error.classList.remove(
+      "visible"
+    );
   }
 
   function showScreen(index) {
     const screens =
-      [
-        ...document.querySelectorAll(
-          ".screen"
-        )
-      ];
+      document.querySelectorAll(
+        ".survey-screen"
+      );
+
+    if (!screens.length) {
+      return;
+    }
 
     if (
       index < 0 ||
@@ -1064,254 +760,423 @@
       }
     );
 
-    const questionStart = 2;
-    const questionEnd =
-      1 + questions.length;
+    const backBtn =
+      $("backBtn");
+
+    const nextBtn =
+      $("nextBtn");
+
+    const submitBtn =
+      $("submitBtn");
 
     const progress =
-      $("progressWrapper");
+      $("surveyProgress");
 
-    if (
-      index >= questionStart &&
-      index <= questionEnd &&
-      questions.length
-    ) {
-      progress.hidden =
-        false;
-
-      const qIndex =
-        index -
-        questionStart;
-
-      const percent =
-        Math.round(
-          (
-            (qIndex + 1) /
-            questions.length
-          ) * 100
-        );
-
-      $("progressText")
-        .textContent =
-          `Tanong ${qIndex + 1} sa ${questions.length}`;
-
-      $("progressPercent")
-        .textContent =
-          `${percent}%`;
-
-      $("progressFill")
-        .style.width =
-          `${percent}%`;
+    if (backBtn) {
+      backBtn.style.display =
+        index === 0
+          ? "none"
+          : "";
     }
 
-    else {
-      progress.hidden =
-        true;
+    const isQuestionScreen =
+      index >= 1 &&
+      index <= questions.length;
+
+    const isFeedbackScreen =
+      index ===
+      questions.length + 1;
+
+    const isSummaryScreen =
+      index ===
+      questions.length + 2;
+
+    if (nextBtn) {
+      nextBtn.style.display =
+        isFeedbackScreen ||
+        isSummaryScreen
+          ? "none"
+          : "";
     }
+
+    if (submitBtn) {
+      submitBtn.style.display =
+        isFeedbackScreen
+          ? ""
+          : "none";
+    }
+
+    if (isSummaryScreen) {
+      if (backBtn) {
+        backBtn.style.display =
+          "none";
+      }
+    }
+
+    if (progress) {
+      if (isSummaryScreen) {
+        progress.textContent =
+          "Kumpleto na ang sarbey";
+      } else {
+        const total =
+          questions.length + 1;
+
+        const position =
+          Math.min(
+            index,
+            total
+          );
+
+        progress.textContent =
+          `Hakbang ${position} / ${total}`;
+      }
+    }
+
+    applyConditions();
 
     window.scrollTo({
       top: 0,
       behavior: "smooth"
     });
-
-    applyConditions();
   }
 
   function collectUniversalQuestionPairs() {
     const pairs = [];
 
-    questions.forEach(field => {
-
-      if (
-        field.showIf &&
-        !conditionMet(
-          field.showIf
-        )
-      ) {
-        return;
-      }
-
-      pairs.push({
-        question:
-          field.label,
-
-        answer:
-          normalizeAnswer(
-            field,
-            state[field.id]
-          )
-      });
-    });
-
-    feedbackFields.forEach(field => {
-
-      if (
-        field.showIf &&
-        !conditionMet(
-          field.showIf
-        )
-      ) {
-        return;
-      }
-
-      const answer =
-        normalizeAnswer(
-          field,
-          state[field.id]
+    questions.forEach(
+      (question, index) => {
+        const id = String(
+          question.id ||
+            question.name ||
+            `question_${index}`
         );
 
-      if (
-        answer !== ""
-      ) {
-        pairs.push({
-          question:
-            field.label,
+        const label = String(
+          question.label ||
+            question.question ||
+            question.title ||
+            ""
+        );
 
-          answer
+        const type =
+          String(
+            question.type ||
+              "text"
+          ).toLowerCase();
+
+        let answer = "";
+
+        if (
+          type === "radio"
+        ) {
+          const selected =
+            document.querySelector(
+              `input[name="${CSS.escape(id)}"]:checked`
+            );
+
+          answer =
+            selected
+              ? selected.value
+              : "";
+        } else if (
+          type === "checkbox"
+        ) {
+          const selected =
+            document.querySelectorAll(
+              `input[name="${CSS.escape(id)}"]:checked`
+            );
+
+          answer =
+            Array.from(
+              selected
+            )
+              .map(
+                (item) =>
+                  item.value
+              )
+              .join(", ");
+        } else {
+          const input =
+            $(id);
+
+          answer =
+            input
+              ? input.value
+              : "";
+        }
+
+        pairs.push({
+          question: label,
+          answer:
+            normalizeAnswer(
+              answer
+            )
         });
       }
-    });
+    );
 
     return pairs;
   }
 
   function getUniversalEntries() {
-    const mapping =
-      config.googleFormEntries ||
-      {};
+    const entries = [];
 
-    const questionEntries =
-      Array.isArray(
-        mapping.questions
-      )
-        ? mapping.questions
-        : [];
+    fields.forEach(
+      (field) => {
+        const id = String(
+          field.id ||
+            field.name ||
+            ""
+        );
 
-    return {
-      surveyId:
-        mapping.surveyId,
+        if (!id) return;
 
-      surveyTitle:
-        mapping.surveyTitle,
+        const input =
+          $(id);
 
-      name:
-        mapping.name,
+        if (!input) return;
 
-      section:
-        mapping.section,
+        entries.push({
+          field,
+          value:
+            normalizeAnswer(
+              input.value
+            )
+        });
+      }
+    );
 
-      gender:
-        mapping.gender,
-
-      date:
-        mapping.date,
-
-      contact:
-        mapping.contact,
-
-      questions:
-        questionEntries
-    };
+    return entries;
   }
 
   function appendIfConfigured(
     form,
-    entry,
+    key,
     value
   ) {
     if (
-      !entry ||
-      String(entry)
-        .includes("REPLACE") ||
-      String(entry)
-        .trim() === ""
+      key &&
+      value !== undefined &&
+      value !== null
     ) {
-      return;
+      form.append(
+        key,
+        String(value)
+      );
     }
-
-    if (
-      value === "" ||
-      value === null ||
-      value === undefined
-    ) {
-      return;
-    }
-
-    form.append(
-      entry,
-      String(value)
-    );
   }
 
   function buildUniversalFormData() {
+    const action =
+      String(
+        config.googleFormActionUrl ||
+          ""
+      );
+
+    if (
+      !action ||
+      action.includes("PASTE_") ||
+      !action.includes(
+        "/formResponse"
+      )
+    ) {
+      throw new Error(
+        "Hindi pa nakalagay ang Google Form response URL."
+      );
+    }
+
     const form =
       new FormData();
+
+    const pairs =
+      collectUniversalQuestionPairs();
 
     const entries =
       getUniversalEntries();
 
+    /*
+     * UNIVERSAL GOOGLE FORM FIELDS
+     *
+     * These are supplied by the
+     * existing survey configuration.
+     */
+    entries.forEach(
+      ({
+        field,
+        value
+      }) => {
+        appendIfConfigured(
+          form,
+          field.entryId ||
+            field.googleEntryId ||
+            field.entry ||
+            "",
+          value
+        );
+      }
+    );
+
+    /*
+     * QUESTIONS
+     *
+     * Each question keeps its
+     * configured Google Forms
+     * entry ID.
+     */
+    questions.forEach(
+      (question, index) => {
+        const id = String(
+          question.id ||
+            question.name ||
+            `question_${index}`
+        );
+
+        const type =
+          String(
+            question.type ||
+              "text"
+          ).toLowerCase();
+
+        let answer = "";
+
+        if (
+          type === "radio"
+        ) {
+          const selected =
+            document.querySelector(
+              `input[name="${CSS.escape(id)}"]:checked`
+            );
+
+          answer =
+            selected
+              ? selected.value
+              : "";
+        } else if (
+          type === "checkbox"
+        ) {
+          const selected =
+            document.querySelectorAll(
+              `input[name="${CSS.escape(id)}"]:checked`
+            );
+
+          answer =
+            Array.from(
+              selected
+            )
+              .map(
+                (item) =>
+                  item.value
+              )
+              .join(", ");
+        } else {
+          const input =
+            $(id);
+
+          answer =
+            input
+              ? input.value
+              : "";
+        }
+
+        appendIfConfigured(
+          form,
+          question.entryId ||
+            question.googleEntryId ||
+            question.entry ||
+            "",
+          answer
+        );
+      }
+    );
+
+    /*
+     * FEEDBACK FIELDS
+     */
+    feedbackFields.forEach(
+      (field) => {
+        const id = String(
+          field.id ||
+            field.name ||
+            ""
+        );
+
+        if (!id) return;
+
+        const type =
+          String(
+            field.type ||
+              "text"
+          ).toLowerCase();
+
+        let value = "";
+
+        if (
+          type === "radio"
+        ) {
+          const selected =
+            document.querySelector(
+              `input[name="${CSS.escape(id)}"]:checked`
+            );
+
+          value =
+            selected
+              ? selected.value
+              : "";
+        } else if (
+          type === "checkbox"
+        ) {
+          const selected =
+            document.querySelectorAll(
+              `input[name="${CSS.escape(id)}"]:checked`
+            );
+
+          value =
+            Array.from(
+              selected
+            )
+              .map(
+                (item) =>
+                  item.value
+              )
+              .join(", ");
+        } else {
+          const input =
+            $(id);
+
+          value =
+            input
+              ? input.value
+              : "";
+        }
+
+        appendIfConfigured(
+          form,
+          field.entryId ||
+            field.googleEntryId ||
+            field.entry ||
+            "",
+          value
+        );
+      }
+    );
+
+    /*
+     * IMPORTANT:
+     *
+     * These universal metadata
+     * entries remain configured
+     * by the existing SURVEY_CONFIG.
+     */
     appendIfConfigured(
       form,
-      entries.surveyId,
+      config.surveyIdEntry,
       config.surveyId
     );
 
     appendIfConfigured(
       form,
-      entries.surveyTitle,
-      config.title
-    );
-
-    allFields
-      .filter(field =>
-        fields.includes(field)
-      )
-      .forEach(field => {
-
-        appendIfConfigured(
-          form,
-          entries[field.id],
-          normalizeAnswer(
-            field,
-            state[field.id]
-          )
-        );
-      });
-
-    const pairs =
-      collectUniversalQuestionPairs();
-
-    if (
-      pairs.length >
-      MAX_QUESTIONS
-    ) {
-      throw new Error(
-        `Lumampas sa maximum na ${MAX_QUESTIONS} tanong.`
-      );
-    }
-
-    pairs.forEach(
-      (pair, index) => {
-
-        const slot =
-          entries.questions[index];
-
-        if (!slot) {
-          return;
-        }
-
-        appendIfConfigured(
-          form,
-          slot.question,
-          pair.question
-        );
-
-        appendIfConfigured(
-          form,
-          slot.answer,
-          pair.answer
-        );
-      }
+      config.surveyTitleEntry,
+      config.surveyTitle
     );
 
     return {
@@ -1321,6 +1186,11 @@
   }
 
   async function submit() {
+    /*
+     * Prevent accidental double-clicks
+     * while the current submission
+     * is still running.
+     */
     if (submitting) {
       return;
     }
@@ -1336,7 +1206,7 @@
     const action =
       String(
         config.googleFormActionUrl ||
-        ""
+          ""
       );
 
     if (
@@ -1349,7 +1219,6 @@
       showSubmitError(
         "Hindi pa nakalagay ang Google Form response URL."
       );
-
       return;
     }
 
@@ -1358,13 +1227,10 @@
     try {
       built =
         buildUniversalFormData();
-    }
-
-    catch (error) {
+    } catch (error) {
       showSubmitError(
         error.message
       );
-
       return;
     }
 
@@ -1373,19 +1239,13 @@
     const btn =
       $("submitBtn");
 
-    btn.disabled =
-      true;
-
-    btn.textContent =
-      "Isinusumite...";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent =
+        "Isinusumite...";
+    }
 
     try {
-
-      /*
-       * KEEP THIS GOOGLE FORMS
-       * SUBMISSION METHOD.
-       */
-
       const body =
         new URLSearchParams();
 
@@ -1398,27 +1258,31 @@
         }
       );
 
+      /*
+       * IMPORTANT:
+       *
+       * Keep this Google Forms
+       * request exactly as the
+       * working version.
+       */
       await fetch(
         action,
         {
           method: "POST",
-
           mode: "no-cors",
-
           headers: {
             "Content-Type":
               "application/x-www-form-urlencoded;charset=UTF-8"
           },
-
           body:
             body.toString()
         }
       );
 
       /*
-       * SUCCESS
+       * Submission succeeded.
+       * Show the summary immediately.
        */
-
       renderSummary(
         built.pairs
       );
@@ -1428,68 +1292,60 @@
       );
 
       /*
-       * 5-SECOND COOLDOWN
+       * DO NOT put the cooldown
+       * on the submit button.
        *
-       * This happens AFTER the
-       * successful submission.
-       *
-       * It does NOT change the
-       * Google Forms request.
+       * The 5-second cooldown
+       * applies ONLY to
+       * "Bagong Sagot".
        */
-
       const restartBtn =
         $("restartBtn");
 
-      if (!restartBtn) {
-        submitting = false;
-        return;
+      if (restartBtn) {
+        let remaining = 5;
+
+        restartBtn.disabled =
+          true;
+
+        restartBtn.textContent =
+          `Maghintay ${remaining}s...`;
+
+        const cooldown =
+          setInterval(
+            () => {
+              remaining--;
+
+              if (
+                remaining > 0
+              ) {
+                restartBtn.textContent =
+                  `Maghintay ${remaining}s...`;
+              } else {
+                clearInterval(
+                  cooldown
+                );
+
+                restartBtn.disabled =
+                  false;
+
+                restartBtn.textContent =
+                  "Bagong Sagot";
+
+                submitting =
+                  false;
+              }
+            },
+            1000
+          );
+      } else {
+        submitting =
+          false;
       }
 
-      let remaining = 5;
-
-      restartBtn.disabled =
-        true;
-
-      restartBtn.textContent =
-        `Maghintay ${remaining}s...`;
-
-      const cooldown =
-        setInterval(
-          () => {
-
-            remaining--;
-
-            if (
-              remaining > 0
-            ) {
-              restartBtn.textContent =
-                `Maghintay ${remaining}s...`;
-            }
-
-            else {
-              clearInterval(
-                cooldown
-              );
-
-              restartBtn.disabled =
-                false;
-
-              restartBtn.textContent =
-                "Bagong Sagot";
-
-              submitting =
-                false;
-            }
-
-          },
-          1000
-        );
-
-    }
-
-    catch (error) {
-
+    } catch (error) {
       console.error(
+        "Survey submission error:",
         error
       );
 
@@ -1498,218 +1354,185 @@
       );
 
       /*
-       * If the request actually
-       * fails, allow retry.
+       * If the request fails,
+       * allow the user to retry.
        */
-
       submitting =
         false;
 
-      btn.disabled =
-        false;
+      if (btn) {
+        btn.disabled =
+          false;
 
-      btn.textContent =
-        "Isumite ang Sarbey";
+        btn.textContent =
+          "Isumite ang Sarbey";
+      }
     }
   }
 
   function showSubmitError(
     message
   ) {
-    const el =
-      $("error-submit");
+    let error =
+      $("submitError");
 
-    el.textContent =
+    if (!error) {
+      error =
+        document.createElement(
+          "div"
+        );
+
+      error.id =
+        "submitError";
+
+      error.className =
+        "submit-error";
+
+      const actions =
+        $("surveyActions");
+
+      if (actions) {
+        actions.before(
+          error
+        );
+      } else if (root) {
+        root.appendChild(
+          error
+        );
+      }
+    }
+
+    error.textContent =
       message;
 
-    el.classList.add(
-      "visible"
-    );
+    error.style.display =
+      "";
   }
 
   function renderSummary(
     pairs
   ) {
-    const respondentRows =
-      fields
-        .filter(field => {
+    const container =
+      $("surveyScreens");
 
-          const value =
-            state[field.id];
+    if (!container) {
+      return;
+    }
 
-          return !isEmpty(
-            field,
-            value
-          );
-        })
-        .map(field => `
+    const summaryScreen =
+      document.createElement(
+        "section"
+      );
 
-          <div class="summary-row">
+    summaryScreen.className =
+      "survey-screen";
 
-            <span class="summary-key">
-              ${esc(field.label)}
-            </span>
+    summaryScreen.dataset.screen =
+      String(
+        questions.length + 2
+      );
 
-            <span class="summary-val">
-              ${esc(
-                normalizeAnswer(
-                  field,
-                  state[field.id]
-                )
-              )}
-            </span>
+    summaryScreen.innerHTML = `
+      <div class="survey-card summary-card">
 
-          </div>
-
-        `)
-        .join("");
-
-    const questionRows =
-      pairs
-        .map(pair => `
-
-          <div class="summary-row">
-
-            <span class="summary-key">
-              ${esc(
-                pair.question
-              )}
-            </span>
-
-            <span class="summary-val">
-              ${esc(
-                pair.answer ||
-                "—"
-              )}
-            </span>
-
-          </div>
-
-        `)
-        .join("");
-
-    $("summary").innerHTML =
-      respondentRows +
-      questionRows ||
-      `
-        <div class="small">
-          Walang detalye.
+        <div class="success-mark">
+          ✓
         </div>
-      `;
+
+        <div class="survey-heading">
+          <span class="survey-kicker">
+            BERIPIKADO
+          </span>
+
+          <h2>
+            Matagumpay na naisumite!
+          </h2>
+
+          <p>
+            Salamat sa pagsagot sa
+            sarbey.
+          </p>
+        </div>
+
+        <div class="summary-list">
+          ${pairs
+            .map(
+              (pair, index) => `
+                <div class="summary-item">
+                  <div class="summary-question">
+                    ${esc(
+                      pair.question
+                    )}
+                  </div>
+
+                  <div class="summary-answer">
+                    ${esc(
+                      pair.answer ||
+                        "Walang sagot"
+                    )}
+                  </div>
+                </div>
+              `
+            )
+            .join("")}
+        </div>
+
+        <div class="summary-actions">
+          <button
+            type="button"
+            id="restartBtn"
+            class="primary-btn"
+          >
+            Bagong Sagot
+          </button>
+        </div>
+
+      </div>
+    `;
+
+    container.appendChild(
+      summaryScreen
+    );
+
+    const restartBtn =
+      $("restartBtn");
+
+    if (restartBtn) {
+      restartBtn.addEventListener(
+        "click",
+        reset
+      );
+    }
   }
 
   function reset() {
-
     /*
-     * Reset all survey fields.
+     * Completely reset the
+     * current survey state.
      */
+    submitting =
+      false;
 
-    allFields.forEach(
-      field => {
+    currentScreen =
+      0;
 
-        state[field.id] =
-          field.defaultValue ??
-          (
-            field.type === "rating"
-              ? 0
-              : field.type === "checkbox"
-                ? []
-                : ""
-          );
+    const rootElement =
+      $("surveyApp");
 
-        const input =
-          $(`field-${field.id}`);
+    if (rootElement) {
+      rootElement.remove();
+    }
 
-        if (
-          input &&
-          "value" in input
-        ) {
-          input.value =
-            "";
-        }
+    render();
 
-        const host =
-          $(`rating-${field.id}`);
-
-        if (host) {
-
-          host
-            .querySelectorAll(
-              "button"
-            )
-            .forEach(
-              b =>
-                b.classList.remove(
-                  "selected"
-                )
-            );
-
-          const readout =
-            $(
-              `readout-${field.id}`
-            );
-
-          if (readout) {
-            readout.textContent =
-              "Wala pang napipili.";
-          }
-        }
-
-        const choices =
-          $(`choices-${field.id}`);
-
-        if (choices) {
-
-          choices
-            .querySelectorAll(
-              ".option-card"
-            )
-            .forEach(b => {
-
-              b.classList.remove(
-                "selected"
-              );
-
-              b.setAttribute(
-                "aria-checked",
-                "false"
-              );
-
-            });
-        }
-
-        clearFieldError(
-          field.id
-        );
-      }
-    );
-
-    $("error-submit")
-      .classList.remove(
-        "visible"
-      );
-
-    setAutomaticDate();
-
-    showScreen(0);
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
   }
 
   /*
    * INITIALIZE
    */
-
   render();
-
-  renderInfoFields();
-
-  renderQuestions();
-
-  renderFeedback();
-
-  setAutomaticDate();
-
-  bindNavigation();
-
-  applyConditions();
-
 })();
