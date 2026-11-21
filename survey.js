@@ -1100,22 +1100,25 @@
         }, 15000);
 
       try {
+        // Run the fetch request and a minimum 2-second visual loading buffer concurrently
+        await Promise.all([
+          fetch(action, {
+            method: "POST",
+            mode: "no-cors",
 
-        await fetch(action, {
-          method: "POST",
-          mode: "no-cors",
+            headers: {
+              "Content-Type":
+                "application/x-www-form-urlencoded;charset=UTF-8"
+            },
 
-          headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded;charset=UTF-8"
-          },
+            body:
+              body.toString(),
 
-          body:
-            body.toString(),
-
-          signal:
-            controller.signal
-        });
+            signal:
+              controller.signal
+          }),
+          new Promise(resolve => setTimeout(resolve, 2000))
+        ]);
 
       } finally {
         clearTimeout(timeout);
@@ -1129,7 +1132,7 @@
         questions.length + 2
       );
 
-      // Reset submission lock and button state immediately for the submit screen
+      // Reset submission lock and submit button state immediately
       submitting = false;
       btn.disabled = false;
       btn.textContent = "Isumite ang Sarbey";
