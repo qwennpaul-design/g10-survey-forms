@@ -1129,7 +1129,7 @@
         questions.length + 2
       );
 
-      // Reset the submit button state immediately so it's ready for next time
+      // Reset submission lock and button state immediately for the submit screen
       submitting = false;
       btn.disabled = false;
       btn.textContent = "Isumite ang Sarbey";
@@ -1141,11 +1141,8 @@
 
         let remaining = 5;
 
-        restartBtn.disabled =
-          true;
-
-        restartBtn.textContent =
-          `Maghintay ${remaining}s...`;
+        restartBtn.disabled = true;
+        restartBtn.textContent = `Maghintay ${remaining}s...`;
 
         const cooldown =
           setInterval(() => {
@@ -1153,21 +1150,11 @@
             remaining--;
 
             if (remaining > 0) {
-
-              restartBtn.textContent =
-                `Maghintay ${remaining}s...`;
-
+              restartBtn.textContent = `Maghintay ${remaining}s...`;
             } else {
-
-              clearInterval(
-                cooldown
-              );
-
-              restartBtn.disabled =
-                false;
-
-              restartBtn.textContent =
-                "Bagong Sagot";
+              clearInterval(cooldown);
+              restartBtn.disabled = false;
+              restartBtn.textContent = "Bagong Sagot";
             }
 
           }, 1000);
