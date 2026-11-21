@@ -1030,26 +1030,6 @@
     };
   }
 
-  /*
-   * ==========================================================
-   * SUBMIT
-   * ==========================================================
-   *
-   * IMPORTANT:
-   * The original Google Forms submission structure
-   * is preserved.
-   *
-   * The ONLY behavior added is:
-   *
-   * 1. A safety timeout so the button cannot remain
-   *    on "Isinusumite..." forever.
-   *
-   * 2. A 5-second cooldown on "Bagong Sagot" AFTER
-   *    the completion screen appears.
-   *
-   * The submit button itself is NOT given a cooldown.
-   */
-
   async function submit() {
     if (submitting) return;
 
@@ -1111,20 +1091,9 @@
         }
       );
 
-      /*
-       * IMPORTANT:
-       * This is the original Google Forms
-       * POST request structure.
-       */
       const controller =
         new AbortController();
 
-      /*
-       * Safety timeout:
-       * If the browser/network request
-       * genuinely hangs, don't leave
-       * the UI permanently locked.
-       */
       const timeout =
         setTimeout(() => {
           controller.abort();
@@ -1152,12 +1121,6 @@
         clearTimeout(timeout);
       }
 
-      /*
-       * ======================================================
-       * SUCCESS
-       * ======================================================
-       */
-
       renderSummary(
         built.pairs
       );
@@ -1166,14 +1129,11 @@
         questions.length + 2
       );
 
-      /*
-       * IMPORTANT:
-       *
-       * The 5-second cooldown happens
-       * ONLY on "Bagong Sagot".
-       *
-       * The submission has already completed.
-       */
+      // Reset the submit button state immediately so it's ready for next time
+      submitting = false;
+      btn.disabled = false;
+      btn.textContent = "Isumite ang Sarbey";
+
       const restartBtn =
         $("restartBtn");
 
@@ -1208,17 +1168,9 @@
 
               restartBtn.textContent =
                 "Bagong Sagot";
-
-              submitting =
-                false;
             }
 
           }, 1000);
-
-      } else {
-
-        submitting =
-          false;
       }
 
     } catch (error) {
@@ -1234,9 +1186,6 @@
           : "Hindi naisumite ang sagot. Pakisuri ang koneksiyon at subukan muli."
       );
 
-      /*
-       * Allow retry after an actual failure.
-       */
       submitting =
         false;
 
